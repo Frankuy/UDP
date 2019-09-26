@@ -1,4 +1,5 @@
-from check_sum import check_sum
+from check_sum import *
+from utility import *
 import socket
 
 #################
@@ -49,54 +50,83 @@ while not valid_files:
             valid_files = True
 
 #### LOOP PER FILES ####
-ID = 0x0
-packets = []
+seq_num = [0 for i in range(0,len(filenames))]
+done_id = []
+chunks = []
+
 for filename in filenames:
     file = open(filename, 'rb')
     text = file.read(CHUNK_SIZE)
-    chunks = []
+    array_byte = []
     while text:
-        chunks.append(text)
+        array_byte.append(text)
         text = file.read(CHUNK_SIZE)
+    chunks.append(array_byte)
     file.close()
 
-    SEQ_NUM = 0x0
-    TYPE = DATA
-    N_PACKETS = len(chunks)
+ID = 0x0
+FINISH = False
+give_name = False
+while not FINISH:
+    if (seq_num[ID] == len(chunks[ID]) - 1):
+        TYPE = FIN
+    else:
+        TYPE = DATA
 
-    #### LOOP PER PACKETS ####
-    for i in range(0, N_PACKETS):
-        ### Last Packets ###
-        if (i == N_PACKETS-1):
-            TYPE = FIN
-
-        ##### Concat TYPE with ID #####
-        PACKET = chr((TYPE << 4) + ID)
-
-        ##### Concat with SEQUENCE #####
-        PACKET += chr(0) + chr(SEQ_NUM)
-
-        ##### Concat with Length #####
-        PACKET += chr(0) + chr(len(chunks[i]))
-
-        ##### Concat with Checksum #####
-        for char in chunks[i]:
-            READ_DATA += chr(char)
-        PACKET += chr(0) + chr(check_sum(PACKET + READ_DATA))
-
-        ##### Concat with Data #####
-        PACKET += READ_DATA
-
-        sendersocket.sendto(PACKET.encode(), receiver_address)
-        print("Paket ke-",i+1," telah berhasil dikirim")
-        SEQ_NUM += 1
-    ID += 1
-
-while True:
-    data, address = sendersocket.recvfrom(32775)
-
+    PACKET = build_packet(TYPE, ID, seq_num[ID], chunks[ID][seq_num[ID]])
+    sendersocket.sendto(PACKET, receiver_address)
+    print(f"Paket ID {ID} SEQ {seq_num[ID]} telah berhasil dikirim")
+    
+    data, address = sendersocket.recvfrom(33000)
     if data:
-        print('Received ACK : ', data)
+        TYPE_RECEIVED, ID_RECEIVED, SEQ_RECEIVED, LENGTH, CHECK_SUM, READ_DATA = extract_packet(data)
+        if (TYPE_RECEIVED == ACK):
+            seq_num[ID] += 1
+        elif (TYPE_RECEIVED == FIN_ACK):
+            # print('DONE')
+            done_id.append(ID)
+            ID += 1
+
+    FINISH = len(done_id) == len(filenames)
+
+# print(chunks)
+#     SEQ_NUM = 0x0
+#     TYPE = DATA
+#     N_PACKETS = len(chunks)
+
+#     #### LOOP PER PACKETS ####
+#     for i in range(0, N_PACKETS):
+#         ### Last Packets ###
+#         if (i == N_PACKETS-1):
+#             TYPE = FIN
+
+#         ##### Concat TYPE with ID #####
+#         PACKET = chr((TYPE << 4) + ID)
+
+#         ##### Concat with SEQUENCE #####
+#         PACKET += chr(0) + chr(SEQ_NUM)
+
+#         ##### Concat with Length #####
+#         PACKET += chr(0) + chr(len(chunks[i]))
+
+#         ##### Concat with Checksum #####
+#         for char in chunks[i]:
+#             READ_DATA += chr(char)
+#         PACKET += chr(0) + chr(check_sum(PACKET + READ_DATA))
+
+#         ##### Concat with Data #####
+#         PACKET += READ_DATA
+
+#         sendersocket.sendto(PACKET.encode(), receiver_address)
+#         print("Paket ke-",i+1," telah berhasil dikirim")
+#         SEQ_NUM += 1
+#     ID += 1
+
+# while True:
+#     data, address = sendersocket.recvfrom(32775)
+
+#     if data:
+#         print('Received ACK : ', data)
 
 ######################
 # Write read file
