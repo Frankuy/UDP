@@ -78,11 +78,11 @@ def makePacket(type, id, seq_numb, data ) : # (hex, hex, hex, bytes) >> bytes
     l = 7
     l = len(bytes_to_str(data)) + l
     l = hex_to_str(l,4)
-    print(l)
+    #print(l)
 
 
     data = bytes_to_str(data)
-#    print(data)
+#    print(makebinary(data))
 #    print(makebinary(first_line))
     packet_temp = first_line+second_line+l+data
     packet_temp = makebinary(packet_temp)
@@ -91,13 +91,20 @@ def makePacket(type, id, seq_numb, data ) : # (hex, hex, hex, bytes) >> bytes
     div = len(packet_temp)//16
 
     checksum = packet_temp[:16]
-    temp = ""
+#    print(checksum)
+
     for i in range(1, div):
+        temp = ""
         arr_div = packet_temp[16*i: 16*(i+1)]
+#        print(arr_div)
         for j in range(16):
             xor = int(checksum[j]) ^ int(arr_div[j])
-            temp = str(xor) + temp
+#            print(int(checksum[j]), end = ' ')
+#            print(int(arr_div[j]), end = ' ')
+#            print()
+            temp =  temp + str(xor)
         checksum = temp
+#        print(checksum)
 
     sisa = len(packet_temp)%16
     if(sisa!=0):
@@ -107,11 +114,14 @@ def makePacket(type, id, seq_numb, data ) : # (hex, hex, hex, bytes) >> bytes
 
         temp2 =""
         for k in range(16):
-            temp2 = str (int(checksum[k]) ^ int(sisa_arr[k])) + temp2
+            temp2 = temp2 + str (int(checksum[k]) ^ int(sisa_arr[k]))
 
         checksum = temp2
+    #    print(checksum)
 
+#    print(checksum)
     checksum = bin2hex(checksum)
+#    print(checksum)
     checksum = checksum[2:]
 
 #    print(first_line)
@@ -120,11 +130,11 @@ def makePacket(type, id, seq_numb, data ) : # (hex, hex, hex, bytes) >> bytes
 #    print(checksum)
 #    print(data)
 
-    packet = first_line + second_line+ l + checksum + data
+#    packet = first_line + second_line+ l + checksum + data
 #    print(packet)
-    return str_to_bytes(packet)
+#    return str_to_bytes(packet)
 
-a= makePacket(0x1,0x1,0x1,b'1')
+a= makePacket(0x1,0x1,0x1,b'ad')
 print(a)
 '''
 # Create UDP socket
