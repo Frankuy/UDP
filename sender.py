@@ -24,22 +24,24 @@ CHUNK_SIZE = 32768
 sendersocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Ask receiver IP Address
-#receiver_ip = input('Receiver IP: ')
+receiver_ip = input('Receiver IP: ')
 
 # Ask receiver Port Address
-#receiver_port = int(input('Receiver Port: '))
+receiver_port = int(input('Receiver Port: '))
 
 # Combine IP and Port to make Receiver Address
-receiver_address = ('localhost', 2000)
+receiver_address = (receiver_ip, receiver_port)
 
 # Connect to receiver
 sendersocket.connect(receiver_address)
 
+# Set Timeout
+sendersocket.settimeout(10)
+
 # Get Filenames that want to be sended
 valid_files = False
 while not valid_files:
-    #filenames = input('Send File : ')
-    filenames = 'test2.txt'
+    filenames = input('Send File : ')
     if filenames == '':
         print('Please input at least one file')
     else:
@@ -53,7 +55,6 @@ while not valid_files:
 seq_num = [0 for i in range(0,len(filenames))]
 done_id = []
 chunks = []
-
 for filename in filenames:
     file = open(filename, 'rb')
     text = file.read(CHUNK_SIZE)
@@ -68,70 +69,38 @@ ID = 0x0
 FINISH = False
 give_name = False
 while not FINISH:
+    #### GIVE NAME ####
+    if not give_name:
+        sendersocket.sendto((chr(0x50) + filenames[ID]).encode(), receiver_address)
+        print(f"Give name file : {filenames[ID]}")
+        give_name = True
+
     if (seq_num[ID] == len(chunks[ID]) - 1):
         TYPE = FIN
     else:
         TYPE = DATA
 
+    #### BUILD PACKET ####
     PACKET = build_packet(TYPE, ID, seq_num[ID], chunks[ID][seq_num[ID]])
+
+    #### SEND PACKET ####
     sendersocket.sendto(PACKET, receiver_address)
     print(f"Paket ID {ID} SEQ {seq_num[ID]} telah berhasil dikirim")
     
-    data, address = sendersocket.recvfrom(33000)
-    if data:
-        TYPE_RECEIVED, ID_RECEIVED, SEQ_RECEIVED, LENGTH, CHECK_SUM, READ_DATA = extract_packet(data)
-        if (TYPE_RECEIVED == ACK):
-            seq_num[ID] += 1
-        elif (TYPE_RECEIVED == FIN_ACK):
-            # print('DONE')
-            done_id.append(ID)
-            ID += 1
+    #### RECEIVE ACKNOWLDGE PACKET ####
+    try:
+        data, address = sendersocket.recvfrom(33000)
+        if data:
+            TYPE_RECEIVED, ID_RECEIVED, SEQ_RECEIVED, LENGTH, CHECK_SUM, READ_DATA = extract_packet(data)
+            if (TYPE_RECEIVED == ACK):
+                seq_num[ID] += 1
+            elif (TYPE_RECEIVED == FIN_ACK):
+                done_id.append(ID)
+                give_name = False
+                ID += 1
+    except:
+        print(f"Paket ID {ID} SEQ {seq_num[ID]} timeout")
+        sendersocket.sendto(PACKET, receiver_address)
 
     FINISH = len(done_id) == len(filenames)
-
-# print(chunks)
-#     SEQ_NUM = 0x0
-#     TYPE = DATA
-#     N_PACKETS = len(chunks)
-
-#     #### LOOP PER PACKETS ####
-#     for i in range(0, N_PACKETS):
-#         ### Last Packets ###
-#         if (i == N_PACKETS-1):
-#             TYPE = FIN
-
-#         ##### Concat TYPE with ID #####
-#         PACKET = chr((TYPE << 4) + ID)
-
-#         ##### Concat with SEQUENCE #####
-#         PACKET += chr(0) + chr(SEQ_NUM)
-
-#         ##### Concat with Length #####
-#         PACKET += chr(0) + chr(len(chunks[i]))
-
-#         ##### Concat with Checksum #####
-#         for char in chunks[i]:
-#             READ_DATA += chr(char)
-#         PACKET += chr(0) + chr(check_sum(PACKET + READ_DATA))
-
-#         ##### Concat with Data #####
-#         PACKET += READ_DATA
-
-#         sendersocket.sendto(PACKET.encode(), receiver_address)
-#         print("Paket ke-",i+1," telah berhasil dikirim")
-#         SEQ_NUM += 1
-#     ID += 1
-
-# while True:
-#     data, address = sendersocket.recvfrom(32775)
-
-#     if data:
-#         print('Received ACK : ', data)
-
-######################
-# Write read file
-######################
-# file = open('coba.bin', 'wb')
-# for packet in packets:
-#     file.write(bytearray(packet[7:].encode()))
-# file.close()
+    

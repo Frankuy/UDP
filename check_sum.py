@@ -1,21 +1,21 @@
 def check_sum(msg):
-  s = 0
-  # loop taking 2 characters at a time
-  for i in range(0, len(msg), 2):
-    w = ord(msg[i]) + (ord(msg[i+1]) << 8 )
-    s = s + w
+    chk = 0
+    #### Check for 2 bytes ####
+    for i in range(0, len(msg), 2):
+        word = ord(msg[i]) + (ord(msg[i+1]) << 8 )
+        chk = chk + word
 
-    s = (s>>16) + (s & 0xffff)
-    s = s + (s >> 16)
+        chk = (chk>>16) + (chk & 0xffff)
+        chk = chk + (chk >> 16)
 
-    #complement and mask to 4 byte short
-    s = ~s & 0xffff
+        #complement and machkk to 4 byte chkhort
+        chk = ~chk & 0xffff
 
-    return s
+        return chk
 
 def check_sum_from_hex(msg):
-    s = 0
+    chk = 0
     for byte in msg:
-        s += ord(byte)
+        chk += ord(byte)
 
-    return s;
+    return chk;
