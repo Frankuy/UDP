@@ -130,9 +130,9 @@ def makePacket(type, id, seq_numb, data ) : # (hex, hex, hex, bytes) >> bytes
 #    print(checksum)
 #    print(data)
 
-#    packet = first_line + second_line+ l + checksum + data
+    packet = first_line + second_line+ l + checksum + data
 #    print(packet)
-#    return str_to_bytes(packet)
+    return str_to_bytes(packet)
 
 
 
