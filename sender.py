@@ -9,10 +9,15 @@ FIN_ACK = 0x3
 
 def hex2bin(hex):
     scale = 16 ## equals to hexadecimal
-    num_of_bits = 8
+    num_of_bits = 4
     return bin(int(hex, scale))[2:].zfill(num_of_bits)
-
-print(hex2bin("x01"))
+def bin2hex(bin):
+    return hex(int(bin,2))
+def makebinary(str):
+    temp =""
+    for i in str:
+        temp = temp + hex2bin(i)
+    return temp
 
 def string2bits(test_str):
 
@@ -35,81 +40,93 @@ def binStrToInt(binary_str):
         num = num * 2
     return num // 2
 
-def int_to_bytes(x, n) -> bytes:
-    return x.to_bytes(n, byteorder='big')
+def int_to_hexstr(bil):
+    return hex(bil)
 
-def makePacket(type, id, seq_numb, data ) : #in hhex
-'''    type = type << 4
-    packet = type + id
+def str_to_bytes(hex):
+    return bytes(hex, 'utf-8')
 
-    print(packet)
-    len = 7
-    print(data)
-    if(data != None):
-        print(len(data))
-        len = len+ len(data)
+def int_to_bytes(bil):
+    return bytes([bil])
 
-    len = int_to_bytes(len,2)
-    print(len)
-    #seq number
-    seq_numb = hex_to_str(seq_numb,4)
-    print(seq_numb)
+
+def read_file(filename): #nama.txt >> bytes
+    with open(filename, "rb") as file:
+        data = file.read()
+    return data
+
+def bytes_to_str(byt):
+    return byt.decode("utf-8")
 
 
 
-#test = makePacket(0x1, 0x1, 0x1, 0x1011)
+def makePacket(type, id, seq_numb, data ) : # (hex, hex, hex, bytes) >> bytes
+#    id = int_to_hex(id)
 
-'''
-    #type =
-    len = length(data) + 7
-    sum = check_sum(type, id,seq_numb, data)
-    packet = type + id + seq_numb + data
+#    seq_numb = int_to_hex(seq_numb)
 
-    return packet #in binary
+    type = type << 4
+    first_line = int_to_hexstr(type+id) #string hex
+#    print(first_line)
+    first_line = first_line[2:]
 
-def check_sum(type, id, seq, l, data):
+#    print(seq_numb)
+    second_line = hex_to_str(seq_numb, 4)
 
-    arr = type+id+seq+l+data
-    div = len(arr)//16
+#    print(second_line)
 
-    checksum = arr[:16]
+    l = 7
+    l = len(bytes_to_str(data)) + l
+    l = hex_to_str(l,4)
+    print(l)
+
+
+    data = bytes_to_str(data)
+#    print(data)
+#    print(makebinary(first_line))
+    packet_temp = first_line+second_line+l+data
+    packet_temp = makebinary(packet_temp)
+#    print(packet_temp)
+
+    div = len(packet_temp)//16
+
+    checksum = packet_temp[:16]
     temp = ""
     for i in range(1, div):
-        arr_div = arr[16*i: 16*(i+1)]
+        arr_div = packet_temp[16*i: 16*(i+1)]
         for j in range(16):
             xor = int(checksum[j]) ^ int(arr_div[j])
             temp = str(xor) + temp
         checksum = temp
 
-    #print(checksum)
-    sisa = len(arr)%16
-
+    sisa = len(packet_temp)%16
     if(sisa!=0):
-        sisa_arr = arr[16*div:]
-        for i in range(len(arr)-sisa):
+        sisa_arr = packet_temp[16*div:]
+        for i in range(16-sisa):
             sisa_arr = "0"+ sisa_arr
 
-        temp =""
-        for j in range(16):
-            temp = str (int(checksum[j]) ^ int(sisa_arr[j])) + temp
+        temp2 =""
+        for k in range(16):
+            temp2 = str (int(checksum[k]) ^ int(sisa_arr[k])) + temp2
 
-        checksum = temp
+        checksum = temp2
 
-#    result = binStrToInt(checksum)
-#    print(result)
-#    result = int_to_bytes(result,2)
+    checksum = bin2hex(checksum)
+    checksum = checksum[2:]
 
-    return result
+#    print(first_line)
+#    print(second_line)
+#    print(l)
+#    print(checksum)
+#    print(data)
 
-test = check_sum("0001", "0001", "0000000000000001", "0000000000000011", "0000000000000001")
-print(test)
+    packet = first_line + second_line+ l + checksum + data
+#    print(packet)
+    return str_to_bytes(packet)
 
-
-'''
-a = ACK << 4
+a= makePacket(0x1,0x1,0x1,b'1')
 print(a)
 '''
-
 # Create UDP socket
 sendersocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -147,3 +164,5 @@ while True:
     data, receiver = sendersocket.recvfrom(4096)
 
     print('received {!r}'.format(data))
+
+'''
