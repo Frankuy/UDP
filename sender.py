@@ -57,16 +57,23 @@ done_id = []
 chunks = []
 for filename in filenames:
     file = open(filename, 'rb')
+
     text = file.read(CHUNK_SIZE)
-    array_byte = []
-    while text:
-        array_byte.append(text)
-        text = file.read(CHUNK_SIZE)
-    chunks.append(array_byte)
-    file.close()
+    if(len(text)==0):
+        print(f"File {filename} kosong")
+    else :
+        array_byte = []
+        while text:
+            array_byte.append(text)
+            text = file.read(CHUNK_SIZE)
+        chunks.append(array_byte)
+        file.close()
 
 ID = 0x0
 FINISH = False
+if chunks == []:
+    FINISH = True
+    
 give_name = False
 while not FINISH:
     #### GIVE NAME ####
@@ -86,7 +93,7 @@ while not FINISH:
     #### SEND PACKET ####
     sendersocket.sendto(PACKET, receiver_address)
     print(f"Paket ID {ID} SEQ {seq_num[ID]} telah berhasil dikirim")
-    
+
     #### RECEIVE ACKNOWLDGE PACKET ####
     try:
         data, address = sendersocket.recvfrom(33000)
@@ -102,5 +109,4 @@ while not FINISH:
         print(f"Paket ID {ID} SEQ {seq_num[ID]} timeout")
         sendersocket.sendto(PACKET, receiver_address)
 
-    FINISH = len(done_id) == len(filenames)
-    
+    FINISH = len(done_id) == len(chunks)
