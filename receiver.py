@@ -1,61 +1,49 @@
 import socket
-import binascii
-def bytes_to_str(byt):
-    return byt.decode("utf-8")
+from check_sum import check_sum, check_sum_from_hex
 
-
-def strhex_to_int(str):
-    return int(str, 2)
-
-
-def extract(packet):
-    packet = bytes_to_str(packet)
-
-    type = packet[0:1]
-    type = strhex_to_int(type)
-
-    id = packet[1:2]
-    id = strhex_to_int(id)
-
-    seq_num = packet[2:6]
-    print(seq_num)
-    seq_num = strhex_to_int(seq_num)
-
-    len = packet[6:10]
-    len = strhex_to_int(len)
-
-
-    checksum = packet[10:14]
-
-    data = packet[14:]
-
-
-
-    return (type, id, seq_num, len, checksum, data)
-
-
+DATA = 0x0
+ACK = 0x1
+FIN = 0x2
+FIN_ACK = 0x3
 
 # Create UDP socket
 receiversocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Ask port to be binded
-port = int(input("Port number: "))
+#port = int(input("Port number: "))
 
 # bind to address and IP
-receiversocket.bind(('localhost', port))
+receiversocket.bind(('localhost', 2000))
 
 # Listen for incoming datagrams
 print("Receiver is listneing on", receiversocket.getsockname())
+type = 0
+
 while True:
     #accept connections from outside
-    data, address = receiversocket.recvfrom(4096)
+    data, address = receiversocket.recvfrom(32775)
 
     # Show connection received information
     print(f"Connection from {address} has been established!")
 
     if data:
-        sent = receiversocket.sendto(data, address)
-        print('sent : {} ... {} bytes back to {}'.format(data, sent, address))
+        ##### Check checksum ######
+        data = data.decode()
+        checksum_calculate = check_sum(data[:5] + data[7:])
+        checksum_received = check_sum_from_hex(data[5:7])
+
+
+        # print(checksum_calculate)
+        # print(data.decode()[0])
+        # checksum_received = ord(data[5:7].encode())
+        if checksum_calculate == checksum_received:
+            type = (ord(data[0]) >> 4) + 1
+            id = ord(data[0]) << 4 >> 4
+            PACKET_BACK = chr(type) + chr(id)
+            PACKET_BACK += data[1:7]
+
+            receiversocket.sendto(PACKET_BACK.encode(), address)
+
     # message = bytesAddressPair[0]
     # address = bytesAddressPair[1]
 
