@@ -134,9 +134,8 @@ def makePacket(type, id, seq_numb, data ) : # (hex, hex, hex, bytes) >> bytes
 #    print(packet)
 #    return str_to_bytes(packet)
 
-a= makePacket(0x1,0x1,0x1,b'ad')
-print(a)
-'''
+
+
 # Create UDP socket
 sendersocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -174,5 +173,3 @@ while True:
     data, receiver = sendersocket.recvfrom(4096)
 
     print('received {!r}'.format(data))
-
-'''
